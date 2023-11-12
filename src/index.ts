@@ -53,4 +53,7 @@ app.route('/departures', departuresRouter);
 app.use('/trips/*', auth([Roles.Admin, Roles.Free, Roles.Premium]));
 app.route('/trips', tripsRouter);
 
-export default app;
+export default {
+	port: Number(process.env.PORT) || 3000,
+	fetch: app.fetch
+};
