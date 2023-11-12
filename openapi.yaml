@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  version: 1.0.0
+  title: whentrain.nyc API
+  termsOfService: 'https://example.com/terms/'
+  # contact:
+  # email: price.comstock@gmail.com
+  # url: 'http://example.com/contact'
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+  x-logo:
+    url: 'https://price.town/img/logo/w.svg'
+  description: |
+    When is the train coming?
+  # tags:
+  # - name: Station
+  #   description: Operations involving stations
+  # - name: Realtime
+  #   description: Operations involving real time status of trains and trips
+servers:
+  - url: 'https://api.whentrain.nyc/v1'
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+    ApiKeyBearer:
+      type: http
+      scheme: bearer
+paths:
+  '/stations/{id}':
+    parameters:
+      - name: pretty
+        in: query
+        description: Pretty print response
+        schema:
+          type: boolean
+    get:
+      tags:
+        - Station
+      summary: Get station by its ID
+      description: |
+        Get information about a station using its ID.
+      operationId: getStationById
+      parameters:
+        - name: id
+          in: path
+          description: The Station's GTFS Stop ID
+          required: true
+          schema:
+            type: string
+      security:
+        - ApiKeyHeader: []
+        - ApiKeyBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              # schema:
+              #   $ref: '#/components/schemas/User'
+              example:
+                stationId: '240'
+                complexId: '240'
+                gtfsStopId: F24
+                division: IND
+                line: 6th Av - Culver
+                stopName: 7 Av
+                borough: Bk
+                trains:
+                  - F
+                  - G
+                structure: Subway
+                gtfsLatitude: 40.666271
+                gtfsLongitude: -73.980305
+                northDirectionLabel: Manhattan - Queens
+                southDirectionLabel: Church Av - Coney Island
+                ada: true
+        '403':
+          description: Forbidden
+        '404':
+          description: Station not found

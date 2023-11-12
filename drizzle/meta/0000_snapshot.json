@@ -1,0 +1,67 @@
+{
+  "version": "5",
+  "dialect": "sqlite",
+  "id": "e108f87f-0947-485d-b607-98ff4d2998f6",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "apiKeys": {
+      "name": "apiKeys",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "short_token": {
+          "name": "short_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "long_token_hash": {
+          "name": "long_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'free'"
+        }
+      },
+      "indexes": {
+        "apiKeys_short_token_unique": {
+          "name": "apiKeys_short_token_unique",
+          "columns": [
+            "short_token"
+          ],
+          "isUnique": true
+        },
+        "short_token_index": {
+          "name": "short_token_index",
+          "columns": [
+            "short_token"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  }
+}

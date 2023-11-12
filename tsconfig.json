@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"esModuleInterop": true,
+		"strict": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx",
+		"types": ["bun-types"],
+		"lib": ["ES2022"],
+		"module": "ESNext", // required for top level await and correct import of modules
+		"moduleResolution": "Bundler", // required for top level await and correct import of modules
+		"target": "ES2017" // required for top level await and correct import of modules
+	}
+}

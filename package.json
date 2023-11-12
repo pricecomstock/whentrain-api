@@ -1,0 +1,23 @@
+{
+	"scripts": {
+		"dev": "bun --bun --watch src/index.ts",
+		"migration:generate": "cp ./src/db/migrationScripts/template.ts ./src/db/migrations/$(date +%Y%m%d-%H%M)-xxx.ts",
+		"migrate:up": "MIGRATION_MODE=up bun ./src/db/migrationScripts/migrate.ts",
+		"migrate:down": "MIGRATION_MODE=down bun ./src/db/migrationScripts/migrate.ts",
+		"migrate:latest": "MIGRATION_MODE=latest bun ./src/db/migrationScripts/migrate.ts"
+	},
+	"dependencies": {
+		"bs58": "^5.0.0",
+		"csv": "^6.3.5",
+		"gtfs-realtime-bindings": "^1.1.1",
+		"hono": "^3.7.2",
+		"kysely": "^0.26.3",
+		"kysely-bun-worker": "^0.4.4",
+		"winston": "^3.11.0",
+		"winston-transport": "^4.6.0",
+		"zod": "^3.22.4"
+	},
+	"devDependencies": {
+		"bun-types": "^0.6.2"
+	}
+}
