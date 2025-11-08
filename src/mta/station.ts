@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
 import logger from '../logging/logger';
+import { Quadtree } from '../spatial/quadtree';
 
 const MTA_STATION_CSV_URL = 'http://web.mta.info/developers/data/nyct/subway/Stations.csv';
 const LOCAL_STATION_CSV_FILE = './public/stations-backup.csv';
@@ -116,3 +117,18 @@ export function getStationById(id: string): Station | undefined {
 export function getStationListByTrain(train: string): Station[] {
 	return stationsByTrain.get(train.toUpperCase()) ?? [];
 }
+
+const NYC_BOUNDS = {
+	minLat: 40.5,
+	maxLat: 40.95,
+	minLong: -74.05,
+	maxLong: -73.75
+};
+
+export const stationsQuadtree = new Quadtree(NYC_BOUNDS);
+
+for (const station of stationsList) {
+	stationsQuadtree.insert(station);
+}
+
+logger.info('Quadtree initialized with all stations');

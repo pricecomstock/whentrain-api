@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 
 // Startup
 import { db } from './db';
-import { initializeAuth } from './auth';
+import { initializeAuth, createApiKey } from './auth';
 import { migrateToLatest } from './db/migrationScripts/migrate';
 
 // Middlewares
 import { prettyJSON } from 'hono/pretty-json';
+import { serveStatic } from 'hono/bun';
 import { auth } from './auth/middleware';
 
 // Routers
@@ -36,10 +37,27 @@ app.use('*', async (c, next) => {
 
 app.get('/', (c) => c.text('When is that! Train! Coming!?'));
 
+app.get('/docs', (c) => c.redirect('/docs/index.html'));
+app.get('/docs/', (c) => c.redirect('/docs/index.html'));
+app.use('/docs/*', serveStatic({ root: './static' }));
+
 app.use('/auth', auth([Roles.Admin, Roles.Free, Roles.Premium]));
 app.get('/auth', (c) => c.text("You're authorized, baby!"));
 app.use('/admin', auth([Roles.Admin]));
 app.get('/admin', (c) => c.text("You're an admin, baby!"));
+
+app.use('/api-key', auth([Roles.Admin]));
+app.post('/api-key', async (c) => {
+	const body = await c.req.json<{ role: string }>();
+	const role = body.role as Roles;
+
+	if (!Object.values(Roles).includes(role)) {
+		return c.json({ error: 'Invalid role. Must be free, premium, or admin' }, 400);
+	}
+
+	const token = await createApiKey(role);
+	return c.json({ token });
+});
 
 app.use('/stations/*', auth([Roles.Admin, Roles.Free, Roles.Premium]));
 app.route('/stations', stationsRouter);

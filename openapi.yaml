@@ -19,7 +19,7 @@ info:
   # - name: Realtime
   #   description: Operations involving real time status of trains and trips
 servers:
-  - url: 'https://api.whentrain.nyc/v1'
+  - url: 'https://api.whentrain.nyc'
 components:
   securitySchemes:
     ApiKeyHeader:
@@ -29,7 +29,135 @@ components:
     ApiKeyBearer:
       type: http
       scheme: bearer
+  schemas:
+    Station:
+      type: object
+      properties:
+        stationId:
+          type: string
+          example: '240'
+        complexId:
+          type: string
+          example: '240'
+        gtfsStopId:
+          type: string
+          example: F24
+        division:
+          type: string
+          example: IND
+        line:
+          type: string
+          example: 6th Av - Culver
+        stopName:
+          type: string
+          example: 7 Av
+        borough:
+          type: string
+          example: Bk
+        trains:
+          type: array
+          items:
+            type: string
+          example: [F, G]
+        structure:
+          type: string
+          example: Subway
+        gtfsLatitude:
+          type: number
+          format: float
+          example: 40.666271
+        gtfsLongitude:
+          type: number
+          format: float
+          example: -73.980305
+        northDirectionLabel:
+          type: string
+          example: Manhattan - Queens
+        southDirectionLabel:
+          type: string
+          example: Church Av - Coney Island
+        ada:
+          type: boolean
+          example: true
+        adaNotes:
+          type: string
+    StationWithDistance:
+      allOf:
+        - $ref: '#/components/schemas/Station'
+        - type: object
+          properties:
+            distanceMiles:
+              type: number
+              format: float
+              description: Distance from query coordinates in miles
+              example: 0.5
+    ArrivalDepartureTime:
+      type: object
+      properties:
+        stationId:
+          type: string
+          description: Station ID without direction suffix
+          example: F24
+        direction:
+          type: string
+          description: Direction (N for North, S for South)
+          example: N
+        stationDirection:
+          type: string
+          description: Station ID with direction suffix
+          example: F24N
+        train:
+          type: string
+          description: Train route identifier
+          example: F
+        timestamp:
+          type: integer
+          description: Unix timestamp of departure time
+          example: 1699567200
+        tripId:
+          type: string
+          description: Unique trip identifier
+          example: 123456_F..N
+        routeId:
+          type: string
+          description: Route identifier
+          example: F
+        directionName:
+          type: string
+          description: Terminal station name for this direction
+          example: Jamaica - 179 St
 paths:
+  '/stations':
+    parameters:
+      - name: pretty
+        in: query
+        description: Pretty print response
+        schema:
+          type: boolean
+    get:
+      tags:
+        - Station
+      summary: List all stations
+      description: |
+        Get a list of all subway stations in the NYC MTA system.
+      operationId: listStations
+      security:
+        - ApiKeyHeader: []
+        - ApiKeyBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Station'
+        '403':
+          description: Forbidden
   '/stations/{id}':
     parameters:
       - name: pretty
@@ -59,26 +187,269 @@ paths:
           description: Success
           content:
             application/json:
-              # schema:
-              #   $ref: '#/components/schemas/User'
-              example:
-                stationId: '240'
-                complexId: '240'
-                gtfsStopId: F24
-                division: IND
-                line: 6th Av - Culver
-                stopName: 7 Av
-                borough: Bk
-                trains:
-                  - F
-                  - G
-                structure: Subway
-                gtfsLatitude: 40.666271
-                gtfsLongitude: -73.980305
-                northDirectionLabel: Manhattan - Queens
-                southDirectionLabel: Church Av - Coney Island
-                ada: true
+              schema:
+                $ref: '#/components/schemas/Station'
         '403':
           description: Forbidden
         '404':
           description: Station not found
+  '/trains/{train}':
+    parameters:
+      - name: pretty
+        in: query
+        description: Pretty print response
+        schema:
+          type: boolean
+    get:
+      tags:
+        - Train
+      summary: Get all stations for a train line
+      description: |
+        Get a list of all stations served by a specific train line (e.g., A, 1, F, etc.).
+      operationId: getStationsByTrain
+      parameters:
+        - name: train
+          in: path
+          description: Train line identifier
+          required: true
+          schema:
+            type: string
+          example: F
+      security:
+        - ApiKeyHeader: []
+        - ApiKeyBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Station'
+        '403':
+          description: Forbidden
+  '/departures/{station_id}':
+    parameters:
+      - name: pretty
+        in: query
+        description: Pretty print response
+        schema:
+          type: boolean
+    get:
+      tags:
+        - Realtime
+      summary: Get real-time departure times for a station
+      description: |
+        Get real-time departure information for trains at a specific station.
+        Station ID can include a direction suffix (N for northbound, S for southbound).
+        If no direction is specified, returns departures for both directions.
+
+        **Query Parameters:**
+        - `bytrain`: Group departures by train-direction combination (e.g., FN, FS, AN, AS)
+        - `limit`: Limit the number of departures returned. When combined with `bytrain`, applies limit to each group separately.
+      operationId: getDeparturesByStation
+      parameters:
+        - name: station_id
+          in: path
+          description: Station GTFS Stop ID with optional direction suffix (N/S)
+          required: true
+          schema:
+            type: string
+          examples:
+            with_direction:
+              value: F24N
+              summary: Station with north direction
+            without_direction:
+              value: F24
+              summary: Station without direction (returns both N and S)
+        - name: bytrain
+          in: query
+          description: Group departures by train-direction combination
+          required: false
+          schema:
+            type: boolean
+          examples:
+            enabled:
+              value: true
+              summary: Group by train-direction
+        - name: limit
+          in: query
+          description: Maximum number of departures to return (per group if bytrain is enabled)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          example: 5
+      security:
+        - ApiKeyHeader: []
+        - ApiKeyBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    description: Array of departures (when bytrain is not specified)
+                    items:
+                      $ref: '#/components/schemas/ArrivalDepartureTime'
+                  - type: object
+                    description: Departures grouped by train-direction (when bytrain is specified)
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ArrivalDepartureTime'
+                    example:
+                      FN:
+                        - stationId: F24
+                          direction: N
+                          stationDirection: F24N
+                          train: F
+                          timestamp: 1699567200
+                          tripId: 123456_F..N
+                          routeId: F
+                          directionName: Jamaica - 179 St
+                      FS:
+                        - stationId: F24
+                          direction: S
+                          stationDirection: F24S
+                          train: F
+                          timestamp: 1699567300
+                          tripId: 123457_F..S
+                          routeId: F
+                          directionName: Coney Island - Stillwell Av
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid query parameters
+        '403':
+          description: Forbidden
+  '/trips/{trip_id}':
+    parameters:
+      - name: pretty
+        in: query
+        description: Pretty print response
+        schema:
+          type: boolean
+    get:
+      tags:
+        - Realtime
+      summary: Get trip information (under construction)
+      description: |
+        Get detailed information about a specific trip. This endpoint is currently under construction.
+      operationId: getTripById
+      parameters:
+        - name: trip_id
+          in: path
+          description: Unique trip identifier
+          required: true
+          schema:
+            type: string
+      security:
+        - ApiKeyHeader: []
+        - ApiKeyBearer: []
+      responses:
+        '200':
+          description: Under construction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Under construction
+        '403':
+          description: Forbidden
+  '/stations/nearby':
+    parameters:
+      - name: pretty
+        in: query
+        description: Pretty print response
+        schema:
+          type: boolean
+    get:
+      tags:
+        - Station
+      summary: Find nearby stations
+      description: |
+        Find stations near a specific geographic coordinate. Returns stations within the maximum distance, sorted by proximity.
+      operationId: getNearbyStations
+      parameters:
+        - name: lat
+          in: query
+          description: Latitude coordinate
+          required: true
+          schema:
+            type: number
+            format: float
+          example: 40.7589
+        - name: long
+          in: query
+          description: Longitude coordinate
+          required: true
+          schema:
+            type: number
+            format: float
+          example: -73.9851
+        - name: count
+          in: query
+          description: Maximum number of stations to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          example: 5
+        - name: maxdistance
+          in: query
+          description: Maximum distance in miles
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            default: 1.0
+          example: 1.0
+      security:
+        - ApiKeyHeader: []
+        - ApiKeyBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StationWithDistance'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid query parameters
+                  details:
+                    type: array
+                    items:
+                      type: object
+        '403':
+          description: Forbidden

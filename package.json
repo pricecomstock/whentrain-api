@@ -1,6 +1,8 @@
 {
 	"scripts": {
 		"dev": "bun --bun --watch src/index.ts",
+		"build:docs": "pnpm redocly build-docs openapi.yaml -o static/docs/index.html",
+		"benchmark:nearby": "bun --bun src/scripts/benchmark-nearby.ts",
 		"migration:generate": "cp ./src/db/migrationScripts/template.ts ./src/db/migrations/$(date +%Y%m%d-%H%M)-xxx.ts",
 		"migrate:up": "MIGRATION_MODE=up bun ./src/db/migrationScripts/migrate.ts",
 		"migrate:down": "MIGRATION_MODE=down bun ./src/db/migrationScripts/migrate.ts",
@@ -15,9 +17,10 @@
 		"kysely-bun-worker": "^0.4.4",
 		"winston": "^3.11.0",
 		"winston-transport": "^4.6.0",
-		"zod": "^3.22.4"
+		"zod": "^3.25.76"
 	},
 	"devDependencies": {
+		"@redocly/cli": "^2.11.0",
 		"bun-types": "^0.6.2"
 	}
 }
